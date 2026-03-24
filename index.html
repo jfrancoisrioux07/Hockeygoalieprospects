@@ -41,6 +41,40 @@
     .logo { font-family:'Barlow Condensed',sans-serif; font-weight:800; font-size:1.25rem; letter-spacing:.04em; text-transform:uppercase; }
     .logo span { color:#4d9fff; }
     nav { display:flex; gap:.25rem; }
+    /* LEAGUE DROPDOWN */
+    .league-dropdown { position:relative; }
+    .league-dropdown-btn {
+      font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:.85rem;
+      letter-spacing:.08em; text-transform:uppercase; padding:.4rem 1rem;
+      border:1px solid rgba(244,246,249,.25); border-radius:4px; cursor:pointer;
+      background:var(--accent); color:#fff; display:flex; align-items:center; gap:.5rem;
+      transition:all .15s;
+    }
+    .league-dropdown-btn:hover { background:#1648c0; }
+    .dropdown-arrow { font-size:.7rem; opacity:.8; }
+    .league-dropdown-menu {
+      display:none; position:absolute; top:calc(100% + 6px); right:0;
+      background:var(--surface); border:1px solid var(--border);
+      border-radius:6px; box-shadow:0 8px 24px rgba(0,0,0,.15);
+      min-width:180px; z-index:300; overflow:hidden;
+      animation:mIn .15s ease;
+    }
+    .league-dropdown-menu.open { display:block; }
+    .dropdown-group-label {
+      font-family:'DM Mono',monospace; font-size:.58rem; text-transform:uppercase;
+      letter-spacing:.1em; color:var(--muted); padding:.5rem 1rem .25rem;
+      border-top:1px solid var(--border); margin-top:.25rem;
+    }
+    .dropdown-group-label:first-child { border-top:none; margin-top:0; }
+    .dropdown-item {
+      display:block; width:100%; text-align:left;
+      font-family:'Barlow Condensed',sans-serif; font-weight:600; font-size:.82rem;
+      letter-spacing:.04em; padding:.45rem 1rem; border:none; background:none;
+      cursor:pointer; color:var(--text); transition:background .1s;
+    }
+    .dropdown-item:hover { background:var(--row-hover); }
+    .dropdown-item.active { color:var(--accent); }
+
     .nav-btn {
       font-family:'Barlow Condensed',sans-serif; font-weight:600; font-size:.8rem;
       letter-spacing:.08em; text-transform:uppercase; padding:.35rem .9rem;
@@ -289,6 +323,17 @@
       letter-spacing:.08em; margin-bottom:1rem;
     }
 
+    /* PLAYOFF TOGGLE */
+    .po-toggle { display:flex; gap:.35rem; margin-top:.6rem; }
+    .po-btn {
+      font-family:'Barlow Condensed',sans-serif; font-weight:600; font-size:.75rem;
+      letter-spacing:.06em; text-transform:uppercase; padding:.3rem .85rem;
+      border:1px solid var(--border); border-radius:3px; cursor:pointer;
+      background:var(--surface); color:var(--muted); transition:all .15s;
+    }
+    .po-btn:hover { color:var(--text); border-color:#b0b8c8; }
+    .po-btn.active { background:var(--accent); color:#fff; border-color:var(--accent); }
+
     footer { text-align:center; padding:2rem; font-family:'DM Mono',monospace; font-size:.68rem; color:var(--muted); border-top:1px solid var(--border); margin-top:3rem; }
 
     @media(max-width:640px) {
@@ -305,14 +350,39 @@
 <header>
   <div class="logo">Hockey<span>Goalie</span>Prospects</div>
   <nav>
-    <button class="nav-btn active" onclick="showLeague('LHJMQ',this)">LHJMQ</button>
-    <!-- Add more leagues here -->
+    <div class="league-dropdown" id="leagueDropdown">
+      <button class="league-dropdown-btn" onclick="toggleDropdown(event)" id="leagueDropdownBtn">
+        <span id="currentLeagueLabel">LHJMQ</span>
+        <span class="dropdown-arrow">▾</span>
+      </button>
+      <div class="league-dropdown-menu" id="leagueDropdownMenu">
+        <div class="dropdown-group-label">Junior NA</div>
+        <button class="dropdown-item active" onclick="selectLeague('LHJMQ',this)">LHJMQ</button>
+        <button class="dropdown-item" onclick="selectLeague('OHL',this)">OHL</button>
+        <button class="dropdown-item" onclick="selectLeague('WHL',this)">WHL</button>
+        <button class="dropdown-item" onclick="selectLeague('USHL',this)">USHL</button>
+        <button class="dropdown-item" onclick="selectLeague('NCAA',this)">NCAA</button>
+        <div class="dropdown-group-label">Europe</div>
+        <button class="dropdown-item" onclick="selectLeague('MHL',this)">MHL</button>
+        <button class="dropdown-item" onclick="selectLeague('SMSARJA',this)">SM-sarja U20</button>
+        <button class="dropdown-item" onclick="selectLeague('J20',this)">J20 Nationell</button>
+        <button class="dropdown-item" onclick="selectLeague('CZECHIAU20',this)">Czechia U20</button>
+        <div class="dropdown-group-label">Pro</div>
+        <button class="dropdown-item" onclick="selectLeague('AHL',this)">AHL</button>
+        <button class="dropdown-item" onclick="selectLeague('ECHL',this)">ECHL</button>
+        <button class="dropdown-item" onclick="selectLeague('NHL',this)">NHL</button>
+      </div>
+    </div>
   </nav>
 </header>
 
 <main>
   <div class="section-header">
-    <div class="league-title">LHJMQ <span class="season-tag">2025–2026</span></div>
+    <div class="league-title" id="leagueTitle">LHJMQ <span class="season-tag" id="seasonTag">2025–2026</span></div>
+    <div class="po-toggle" id="poToggle" style="display:none">
+      <button class="po-btn active" id="btnSR" onclick="setMode('SR')">Saison régulière</button>
+      <button class="po-btn" id="btnPO" onclick="setMode('PO')">Playoffs</button>
+    </div>
     <div class="controls">
       <input class="search-box" type="text" id="search" placeholder="Search goalie or team…" oninput="filterTable()"/>
       <span class="filter-label">Min. GP</span>
@@ -404,12 +474,34 @@
 <script>
 // ── CONFIG ──────────────────────────────────────
 const CFG = {
-  SHEET_ID: "1t6O6flxv8isrHVoCFqQLWVnY1QR2ty3uP3ujt1OqGm4",
-  WEB:      "WEB_LHJMQ_2526",
+  SHEET_ID: "VOTRE_SHEET_ID_ICI",
   PLAYERS:  "GARDIENS",
-  STATS:    "STATS_LHJMQ_2526",
   SCOUTING: "SCOUTING_REPORTS",
 };
+
+// Toutes les ligues disponibles
+// ← CHANGER ICI CHAQUE SAISON
+// Format : "2526" = saison 2025-2026, "2627" = saison 2026-2027
+const SEASON = "2526";
+const SEASON_LABEL = "20" + SEASON.slice(0,2) + "–20" + SEASON.slice(2);
+
+const LEAGUES = {
+  LHJMQ:      { label:"LHJMQ",          web:`WEB_LHJMQ_${SEASON}`, webPO:`WEB_LHJMQ_${SEASON}_PO`,      stats:`STATS_LHJMQ_${SEASON}`,      cat:"junior", hasPO:false },
+  OHL:        { label:"OHL",            web:`WEB_OHL_${SEASON}`, webPO:`WEB_OHL_${SEASON}_PO`,        stats:`STATS_OHL_${SEASON}`,        cat:"junior", hasPO:false },
+  WHL:        { label:"WHL",            web:`WEB_WHL_${SEASON}`, webPO:`WEB_WHL_${SEASON}_PO`,        stats:`STATS_WHL_${SEASON}`,        cat:"junior", hasPO:false },
+  USHL:       { label:"USHL",           web:`WEB_USHL_${SEASON}`, webPO:`WEB_USHL_${SEASON}_PO`,       stats:`STATS_USHL_${SEASON}`,       cat:"junior", hasPO:false },
+  NCAA:       { label:"NCAA",           web:`WEB_NCAA_${SEASON}`, webPO:`WEB_NCAA_${SEASON}_PO`,       stats:`STATS_NCAA_${SEASON}`,       cat:"junior", hasPO:false },
+  MHL:        { label:"MHL",            web:`WEB_MHL_${SEASON}`, webPO:`WEB_MHL_${SEASON}_PO`,        stats:`STATS_MHL_${SEASON}`,        cat:"europe", hasPO:false },
+  SMSARJA:    { label:"SM-sarja U20",   web:`WEB_SMSARJA_${SEASON}`, webPO:`WEB_SMSARJA_${SEASON}_PO`,    stats:`STATS_SMSARJA_${SEASON}`,    cat:"europe", hasPO:false },
+  J20:        { label:"J20 Nationell",  web:`WEB_J20_${SEASON}`, webPO:`WEB_J20_${SEASON}_PO`,        stats:`STATS_J20_${SEASON}`,        cat:"europe", hasPO:false },
+  CZECHIAU20: { label:"Czechia U20",    web:`WEB_CZECHIAU20_${SEASON}`, webPO:`WEB_CZECHIAU20_${SEASON}_PO`, stats:`STATS_CZECHIAU20_${SEASON}`, cat:"europe", hasPO:false },
+  AHL:        { label:"AHL",            web:`WEB_AHL_${SEASON}`, webPO:`WEB_AHL_${SEASON}_PO`,        stats:`STATS_AHL_${SEASON}`,        cat:"pro", hasPO:false },
+  ECHL:       { label:"ECHL",           web:`WEB_ECHL_${SEASON}`, webPO:`WEB_ECHL_${SEASON}_PO`,       stats:`STATS_ECHL_${SEASON}`,       cat:"pro", hasPO:false },
+  NHL:        { label:"NHL",            web:`WEB_NHL_${SEASON}`, webPO:`WEB_NHL_${SEASON}_PO`,        stats:`STATS_NHL_${SEASON}`,        cat:"pro", hasPO:false },
+};
+
+let currentLeague = "LHJMQ";
+let currentMode   = "SR";  // "SR" = saison régulière, "PO" = playoffs
 
 // Column index mapping (position in row array, col 0 = goalkeeper_id)
 const C = { ID:0,NAME:1,TEAM:2,GP:3,MIN:4,GAA:5,SVP:6,SA:7,XG:8,XG60:9,GSAX:10,GSAX60:11,SVPD:12,GPS:13,PCT60:14 };
@@ -437,10 +529,12 @@ function parseCSV(t){
 // ── LOAD ─────────────────────────────────────────
 async function load(){
   if(CFG.SHEET_ID==="VOTRE_SHEET_ID_ICI"){ demo(); return; }
+  const lg = LEAGUES[currentLeague];
+  const webTab = currentMode === 'PO' ? lg.webPO : lg.web;
   try{
     const [w,p,s,sc]=await Promise.all([
-      getCSV(CFG.WEB),getCSV(CFG.PLAYERS),
-      getCSV(CFG.STATS),getCSV(CFG.SCOUTING)
+      getCSV(webTab),getCSV(CFG.PLAYERS),
+      getCSV(lg.stats),getCSV(CFG.SCOUTING)
     ]);
     rows=w.slice(1).filter(r=>r[0]);
     const ph=p[0]; profs={};
@@ -455,6 +549,10 @@ async function load(){
       scout[r[0]].push({match:r[1]||'',report:r[2]||''});
     });
     document.getElementById('lastUpdated').textContent='Updated '+new Date().toLocaleDateString('en-CA');
+    document.getElementById('seasonTag').textContent = SEASON_LABEL;
+    // Show PO toggle if this league has playoff data
+    document.getElementById('poToggle').style.display =
+      LEAGUES[currentLeague].hasPO ? 'flex' : 'none';
     render();
   }catch(e){
     document.getElementById('tableBody').innerHTML=`<tr class="state-row"><td colspan="15">⚠ Could not load data. Verify your Sheet ID and that the document is public.</td></tr>`;
@@ -556,7 +654,8 @@ function openProfile(id,e){
   const p=profs[id]||{};
   const name=(p.first_name&&p.last_name)?`${p.first_name} ${p.last_name.toUpperCase()}`:(row?row[C.NAME]:id);
   document.getElementById('mName').textContent=name;
-  document.getElementById('mMeta').textContent=`${row?row[C.TEAM]:''} · LHJMQ · 2025–2026`;
+  const modeLabel = currentMode === 'PO' ? ' · Playoffs' : '';
+  document.getElementById('mMeta').textContent=`${row?row[C.TEAM]:''} · ${LEAGUES[currentLeague].label}${modeLabel} · ${SEASON_LABEL}`;
 
   // GPS badge
   const gv=row?row[C.GPS]:'—', gn=parseFloat(gv);
@@ -568,7 +667,7 @@ function openProfile(id,e){
   const infoFields=[
     {l:'Goalie ID',  v:id},
     {l:'Team',       v:row?row[C.TEAM]:'—'},
-    {l:'League',     v:'LHJMQ'},
+    {l:'League',     v:LEAGUES[currentLeague].label},
     {l:'Season',     v:'2025–2026'},
   ];
   document.getElementById('profileGrid').innerHTML=infoFields.map(f=>
@@ -663,7 +762,7 @@ function openProfile(id,e){
     </div>`).join('');
   } else if(row){
     hb.innerHTML=`<div class="season-row">
-      <span class="season-pill">LHJMQ 2025-26</span>
+      <span class="season-pill">${LEAGUES[currentLeague].label} ${SEASON_LABEL}</span>
       <span class="season-stat">GP <strong>${row[C.GP]||'—'}</strong></span>
       <span class="season-stat">GAA <strong>${row[C.GAA]||'—'}</strong></span>
       <span class="season-stat">SV% <strong>${row[C.SVP]||'—'}</strong></span>
@@ -714,9 +813,56 @@ function switchTab(name){
   });
 }
 
-function showLeague(l,btn){
-  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+function toggleDropdown(e){
+  e.stopPropagation();
+  document.getElementById('leagueDropdownMenu').classList.toggle('open');
+}
+
+document.addEventListener('click', ()=>{
+  document.getElementById('leagueDropdownMenu').classList.remove('open');
+});
+
+function setMode(mode){
+  currentMode = mode;
+  document.getElementById('btnSR').classList.toggle('active', mode === 'SR');
+  document.getElementById('btnPO').classList.toggle('active', mode === 'PO');
+  rows=[]; profs={}; hist={}; scout={};
+  const lg = LEAGUES[currentLeague];
+  document.getElementById('tableBody').innerHTML =
+    `<tr class="state-row"><td colspan="15"><span class="spinner"></span>Loading...</td></tr>`;
+  load();
+}
+
+function selectLeague(leagueKey, btn){
+  currentLeague = leagueKey;
+  const lg = LEAGUES[leagueKey];
+
+  // Update active state in dropdown
+  document.querySelectorAll('.dropdown-item').forEach(b=>b.classList.remove('active'));
   if(btn) btn.classList.add('active');
+
+  // Update button label and page title
+  document.getElementById('currentLeagueLabel').textContent = lg.label;
+  document.getElementById('leagueTitle').innerHTML =
+    `${lg.label} <span class="season-tag">${SEASON_LABEL}</span>`;
+
+  // Close dropdown
+  document.getElementById('leagueDropdownMenu').classList.remove('open');
+
+  // Reset to SR mode when switching league
+  currentMode = 'SR';
+  document.getElementById('btnSR').classList.add('active');
+  document.getElementById('btnPO').classList.remove('active');
+
+  // Show/hide PO toggle based on hasPO flag
+  const poToggle = document.getElementById('poToggle');
+  poToggle.style.display = LEAGUES[leagueKey].hasPO ? 'flex' : 'none';
+
+  // Reload data for new league
+  document.getElementById('tableBody').innerHTML =
+    `<tr class="state-row"><td colspan="15"><span class="spinner"></span>Loading ${lg.label}…</td></tr>`;
+  rows=[]; profs={}; hist={}; scout={};
+  load();
 }
 
 load();
